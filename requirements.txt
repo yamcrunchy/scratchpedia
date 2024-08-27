@@ -1,0 +1,2 @@
+scratchattach==1.7.3
+Wikipedia-API==0.7.1
