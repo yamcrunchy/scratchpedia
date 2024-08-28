@@ -28,8 +28,10 @@ operation_response = {
     "error": "",  # return any error code...
 }
 change = ""
-
-
+status = "Free"
+wiki_index = 0
+wiki_response = ""
+wiki_chunkcount = 0
 # Tkinter
 class Window:
     def __init__(self):
@@ -85,6 +87,8 @@ def main():
         f.close()
         f = open("logs/users.txt", "w+")
         f.close()
+        f = open("logs/profanity.txt", "w+")
+        f.close()
     if scratch3.get_var(id, "operation") is not None:
         print("Successfully initialized.\nStarting event listener...")
         events.start(thread=True)
@@ -109,9 +113,9 @@ def wiki(query, type): # Handle wiki requests
         if type == "title":
             return page_py.title
         elif type == "content":
-            chunks = [wiki_response["content"][i:i + 256] for i in range(0, len(wiki_response["content"]), 256)]
-            print(wiki_response)
-            return("Completed")
+            encoded_wiki_response = encode(wiki_response["content"])
+            chunks = [encoded_wiki_response[i:i + 256] for i in range(0, len(encoded_wiki_response), 256)]
+            return(chunks)
         elif type == "exists":
             return True
     else: 
@@ -167,16 +171,6 @@ def get_vars():  # Fetch, declare and store cloud variables
     global operation
     operation = scratch3.get_var(id, "operation")
 
-
-def fragment(
-    query,
-):  # Split up a long message into smaller packets (max 256 length per cloud variable (8 unused)).
-    if len(query) > 256:
-        pass
-    else:
-        return query
-
-
 def user_in_users(username):
     with open("logs/users.txt", "r") as file:
         file = file.read()
@@ -185,7 +179,7 @@ def user_in_users(username):
 
 
 def handle_operation(event):
-    global change
+    global change, status, wiki_index, wiki_response, wiki_chunkcount
     if event.var == "operation":
         d_operation = decode_list(operation)  
         operation_vars = { # Decoded cloud variable operation packet
@@ -195,8 +189,10 @@ def handle_operation(event):
             "time": d_operation[3],
             "type": d_operation[4],
             "request": d_operation[5],
+            "chunk-number": d_operation[6]
         }
         if operation_vars["type"] == "update" and operation_vars["change"] != change: # Respond to ping
+            status = "Responding to ping request"
             if not user_in_users(operation_vars["username"]): # Check if user has used project prior
                 log(operation_vars["username"] + "\n", "users") # Add username to logs/users.txt
                 print("User " + operation_vars["username"] + " logged to log/users.txt") 
@@ -221,12 +217,15 @@ def handle_operation(event):
             print(
                 f"{operation_vars["change"]} Operation Status Updated @ {operation_vars['time']} by user {operation_vars['username']}\n"
             )
+            status = "free"
 
         elif operation_vars["type"] == "request" and operation_vars["change"] != change: # If request is for wiki access
+            status = "responding to wiki access request"
             log(f"{operation_vars['change']} Received Request @ {operation_vars['time']} from user {operation_vars['username']}", "updates")
             print(f"{operation_vars['change']} Received Request @ {operation_vars['time']} from user {operation_vars['username']}")
             change = operation_vars["change"]
             if profanity.contains_profanity(operation_vars['request']): # If request was profane log and restrict
+                status = "responding to denied wiki access"
                 msg = "Request denied: Profanity. User recorded!"
                 operation_response = {
                     "change": change,
@@ -235,12 +234,16 @@ def handle_operation(event):
                     "msg": msg,
                     "error": "Error 400: Bad request",
                 } 
-                log(f'{change} Profanity: "{operation_vars["request"]}" @{operation_vars["time"]} by user {operation_vars["username"]}', "profanity") # Log username and request
+                log(f'{change} Profanity: "{operation_vars["request"]}" @{operation_vars["time"]} by user {operation_vars["username"]}\n', "profanity") # Log username and request
                 conn.set_var("operation_response", encode_list(operation_response.values())) # Return operation response
-                
+                status = "free"
             else:
                 if not wiki(operation_vars["request"], "exists") == False: # Check if wiki page exists
-                    msg = "Request accepted. Please wait."
+                    status = "wiki-busy"
+                    wiki_index = 0
+                    wiki_response = wiki(operation_vars["request"], "content") # Store encoded 256char length wiki summary into variable
+                    wiki_chunkcount = len(wiki_response) - 1
+                    msg = "Request accepted. Please wait..."
                     operation_response = {
                         "change": change,
                         "username": operation_vars["username"],
@@ -248,10 +251,26 @@ def handle_operation(event):
                         "msg": msg,
                         "error": "Status 202 OK",
                         "title": wiki(operation_vars["request"], "title"),
+                        "length": str(len(wiki_response))
                     }
-                    conn.set_var("operation_response", encode_list(operation_response.values()))
+                    conn.set_var("operation_response", encode_list(operation_response.values())) 
+                    conn.set_var("content", wiki_response[wiki_index])
+                    conn.set_var("index", "0")
+
+                    log(f'{operation_vars["change"]} "{operation_vars["request"]}" pulled from wiki @ {operation_vars["time"]} by user {operation_vars["username"]}\n', "query")
+                    
+        elif operation_vars["type"] == "wiki-update" and status == "wiki-busy":
+            print(f"{operation_vars['change']} Recieved permission to continue to next chunk. @ {operation_vars['time']} from user {operation_vars['username']}")
+            if wiki_chunkcount <= wiki_index:
+                status = "free"
+                wiki_index = 0
+            else: 
+                wiki_index+=1
+                conn.set_var("content", wiki_response[wiki_index])
+
         else:
-            msg = "ERROR: Request was invalid or didn't follow proper template!"
+            status = "Invalid request"
+            msg = "ERROR: Invalid request. Please try again."
             operation_response = {
                 "change": operation_vars["change"],
                 "username": operation_vars["username"],
@@ -260,6 +279,7 @@ def handle_operation(event):
                 "error": "Error 400: Bad request",
             }
             conn.set_var("operation_response", encode_list(operation_response.values()))
+            status = "free"
 
 
 @events.event
