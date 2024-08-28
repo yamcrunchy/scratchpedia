@@ -212,8 +212,8 @@ def handle_operation(event):
             )
 
         elif operation_vars["type"] == "request" and operation_vars["change"] != change:
-            log(f"{operation_vars['change']} Recieved Request @ {operation_vars['time']} from user {operation_vars['username']}", "updates")
-            print(f"{operation_vars['change']} Recieved Request @ {operation_vars['time']} from user {operation_vars['username']}")
+            log(f"{operation_vars['change']} Received Request @ {operation_vars['time']} from user {operation_vars['username']}", "updates")
+            print(f"{operation_vars['change']} Received Request @ {operation_vars['time']} from user {operation_vars['username']}")
             change = operation_vars["change"]
             msg = "Processing will begin shortly."
             operation_response = {
