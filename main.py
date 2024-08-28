@@ -6,6 +6,7 @@ import os
 import re
 import tkinter as tk
 import sys
+from better_profanity import profanity
 
 # Scratch connection
 with open("logs/info.txt", "r") as file:  # Get sensitive information
@@ -94,17 +95,27 @@ def main():
         print("Failed to connect properly. Exiting...")
 
 
-def wiki(query):
-    q = query
+def wiki(query, type): # Handle wiki requests
     wiki_wiki = wikipediaapi.Wikipedia(
         "Scratch Wikipedia (https://scratch.mit.edu/projects/1059644681/) (Contact: yamcrunchy@gmail.com)",
         "en",
     )
-    page_py = wiki_wiki.page(q)
+    page_py = wiki_wiki.page(query)
+    wiki_response = {
+        "title": page_py.title,
+        "content": str(page_py.summary[0:len(str(page_py.summary))]).replace("\n", " ")
+        }
     if page_py.exists():
-        print("Page exists")
-    else:
-        print("Page does not exist.")
+        if type == "title":
+            return page_py.title
+        elif type == "content":
+            chunks = [wiki_response["content"][i:i + 256] for i in range(0, len(wiki_response["content"]), 256)]
+            print(wiki_response)
+            return("Completed")
+        elif type == "exists":
+            return True
+    else: 
+        return False
 
 
 def decode(val):
@@ -176,8 +187,8 @@ def user_in_users(username):
 def handle_operation(event):
     global change
     if event.var == "operation":
-        d_operation = decode_list(operation)  # decoded values necessary to operate
-        operation_vars = {
+        d_operation = decode_list(operation)  
+        operation_vars = { # Decoded cloud variable operation packet
             "change": d_operation[0],
             "username": d_operation[1],
             "days-since-2000": d_operation[2],
@@ -185,45 +196,60 @@ def handle_operation(event):
             "type": d_operation[4],
             "request": d_operation[5],
         }
-        if operation_vars["type"] == "update" and operation_vars["change"] != change:
-            if not user_in_users(operation_vars["username"]):
-                log(operation_vars["username"] + "\n", "users")
-                print("User " + operation_vars["username"] + " logged to log/users.txt")
+        if operation_vars["type"] == "update" and operation_vars["change"] != change: # Respond to ping
+            if not user_in_users(operation_vars["username"]): # Check if user has used project prior
+                log(operation_vars["username"] + "\n", "users") # Add username to logs/users.txt
+                print("User " + operation_vars["username"] + " logged to log/users.txt") 
                 msg = f"User {operation_vars['username']} + was added to database!"
-            else:
+            else: # User has used before
                 msg = "Welcome back " + operation_vars["username"]
 
-            operation_response = {
+            operation_response = { # Operation Response packet
                 "change": operation_vars["change"],
                 "username": operation_vars["username"],
                 "days-since-2000": operation_vars["days-since-2000"],
                 "msg": msg,
                 "error": "Status 200 OK",
             }
-            change = operation_vars["change"]
-            conn.set_var("operation_response", encode_list(operation_response.values()))
+            change = operation_vars["change"] # Update local change
+            conn.set_var("operation_response", encode_list(operation_response.values())) # Send packet
 
-            log(
+            log( # Record ping
                 f"{operation_vars["change"]} Operation Status Updated @ {operation_vars['time']} by user {operation_vars['username']}\n",
                 "updates",
-            )
+            ) 
             print(
                 f"{operation_vars["change"]} Operation Status Updated @ {operation_vars['time']} by user {operation_vars['username']}\n"
             )
 
-        elif operation_vars["type"] == "request" and operation_vars["change"] != change:
+        elif operation_vars["type"] == "request" and operation_vars["change"] != change: # If request is for wiki access
             log(f"{operation_vars['change']} Received Request @ {operation_vars['time']} from user {operation_vars['username']}", "updates")
             print(f"{operation_vars['change']} Received Request @ {operation_vars['time']} from user {operation_vars['username']}")
             change = operation_vars["change"]
-            msg = "Processing will begin shortly."
-            operation_response = {
-                "change": change,
-                "username": operation_vars["username"],
-                "days-since-2000": operation_vars["days-since-2000"],
-                "msg": msg,
-                "error": "Status 202 OK",
-            }
-            conn.set_var("operation_response", encode_list(operation_response.values()))
+            if profanity.contains_profanity(operation_vars['request']): # If request was profane log and restrict
+                msg = "Request denied: Profanity. User recorded!"
+                operation_response = {
+                    "change": change,
+                    "username": operation_vars["username"],
+                    "days-since-2000": operation_vars["days-since-2000"],
+                    "msg": msg,
+                    "error": "Error 400: Bad request",
+                } 
+                log(f'{change} Profanity: "{operation_vars["request"]}" @{operation_vars["time"]} by user {operation_vars["username"]}', "profanity") # Log username and request
+                conn.set_var("operation_response", encode_list(operation_response.values())) # Return operation response
+                
+            else:
+                if not wiki(operation_vars["request"], "exists") == False: # Check if wiki page exists
+                    msg = "Request accepted. Please wait."
+                    operation_response = {
+                        "change": change,
+                        "username": operation_vars["username"],
+                        "days-since-2000": operation_vars["days-since-2000"],
+                        "msg": msg,
+                        "error": "Status 202 OK",
+                        "title": wiki(operation_vars["request"], "title"),
+                    }
+                    conn.set_var("operation_response", encode_list(operation_response.values()))
         else:
             msg = "ERROR: Request was invalid or didn't follow proper template!"
             operation_response = {
@@ -240,7 +266,6 @@ def handle_operation(event):
 def on_set(event):
     get_vars()
     handle_operation(event)
-
 
 if __name__ == "__main__":
     main()
