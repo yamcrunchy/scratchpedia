@@ -36,7 +36,7 @@ class Window:
 
         self.root.geometry("500x500")
 
-        self.title = tk.Label(self.root, text="Scratchpedia", font=("Arial", 20))
+        self.title = tk.Label(self.root, text="Scratchpedia GUI", font=("Arial", 20))
         self.title.pack(pady=5)
 
         self.buttonframe = tk.Frame(self.root)
@@ -142,7 +142,8 @@ def encode_list(query):
     result = ""
     for x in range(len(q)):
         result = result + q[x] + "|"
-    return encode(result)
+
+    return Encoding.encode(result)
 
 
 def log(string, location):
@@ -194,7 +195,7 @@ def handle_operation(event):
 
             operation_response = {
                 "change": operation_vars["change"],
-                "username": "Resource accessed by " + operation_vars["username"],
+                "username": operation_vars["username"],
                 "days-since-2000": operation_vars["days-since-2000"],
                 "msg": msg,
                 "error": "Status 200 OK",
@@ -211,28 +212,28 @@ def handle_operation(event):
             )
 
         elif operation_vars["type"] == "request" and operation_vars["change"] != change:
-            print("recieved request")
+            log(f"{operation_vars['change']} Recieved Request @ {operation_vars['time']} from user {operation_vars['username']}", "updates")
+            print(f"{operation_vars['change']} Recieved Request @ {operation_vars['time']} from user {operation_vars['username']}")
             change = operation_vars["change"]
-            msg = "hello"
+            msg = "Processing will begin shortly."
             operation_response = {
                 "change": change,
-                "username": "Resource accessed by " + operation_vars["username"],
+                "username": operation_vars["username"],
                 "days-since-2000": operation_vars["days-since-2000"],
                 "msg": msg,
-                "error": "Status 200 OK",
+                "error": "Status 202 OK",
             }
             conn.set_var("operation_response", encode_list(operation_response.values()))
         else:
-            msg = "ERROR"
+            msg = "ERROR: Request was invalid or didn't follow proper template!"
             operation_response = {
                 "change": operation_vars["change"],
-                "username": "Resource accessed by " + operation_vars["username"],
+                "username": operation_vars["username"],
                 "days-since-2000": operation_vars["days-since-2000"],
                 "msg": msg,
                 "error": "Error 400: Bad request",
             }
             conn.set_var("operation_response", encode_list(operation_response.values()))
-
 
 
 @events.event
