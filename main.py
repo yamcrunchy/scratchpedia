@@ -81,6 +81,8 @@ def main():
         os.makedirs("logs/")
         f = open("logs/info.txt", "w+")
         f.close()
+        f = open("logs/info.txt", "a")
+        f.write("# Paste project id here\n# Enter Scratch username here\n# Enter Scratch password here\n # Enter Scratch SessionID here")
         f = open("logs/query.txt", "w+")
         f.close()
         f = open("logs/updates.txt", "w+")
