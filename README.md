@@ -7,7 +7,7 @@ Scratchpedia uses scratchattach and wikipedia-api to send and recieve informatio
 
 # Instructions for use
 
-To install this project paste the following into your bash terminal:
+To install this project paste the following into your bash terminal:  <br>  
 git clone https://github.com/yamcrunchy/scratchpedia.git
 Once cloned, run the "main.py" script once and close the program using the included tkinter gui by clicking the button "Kill Program."
 
