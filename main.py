@@ -32,6 +32,7 @@ status = "Free"
 wiki_index = 0
 wiki_response = ""
 wiki_chunkcount = 0
+wiki_request = ""
 # Tkinter
 class Window: # GUI (Window, label, kill and pause button)
     def __init__(self):
@@ -185,7 +186,7 @@ def user_in_users(username):
 
 
 def handle_operation(event):
-    global change, status, wiki_index, wiki_response, wiki_chunkcount
+    global change, status, wiki_index, wiki_response, wiki_chunkcount, wiki_request
     if event.var == "operation":
         d_operation = decode_list(operation)  
         operation_vars = { # Decoded cloud variable operation packet
@@ -249,6 +250,7 @@ def handle_operation(event):
                     wiki_index = 0
                     wiki_response = wiki(operation_vars["request"], "content") # Store encoded 256char length wiki summary into variable
                     wiki_chunkcount = len(wiki_response) - 1
+                    wiki_request = operation_vars["request"]
                     msg = "Request accepted. Please wait..."
                     operation_response = {
                         "change": change,
@@ -269,7 +271,7 @@ def handle_operation(event):
             if wiki_chunkcount <= wiki_index:
                 status = "free"
                 wiki_index = 0
-                log_msg = f'{operation_vars["change"]} Finished query "{operation_vars["request"]}" @ {operation_vars["time"]} from {operation_vars["username"]}'
+                log_msg = f'{operation_vars["change"]} Finished query "{wiki_request}" @ {operation_vars["time"]} from {operation_vars["username"]}'
                 log(log_msg + "\n", "updates")
                 print(log_msg)
             else: 
