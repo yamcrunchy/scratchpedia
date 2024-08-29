@@ -5,20 +5,21 @@
 Scratchpedia is a Python program that uses scratchattach and wikipedia-api to send and recieve information between wikipedia articles and the scratch project, all relayed through the computer running it.
 
 # Installation
-
+Get the latest version of Python3 [Here](https://www.python.org/downloads/)
 To install this project paste the following into your bash terminal:  
 ```
 git clone https://github.com/yamcrunchy/scratchpedia.git
 ```
 Then proceed to remix this scratch project: https://scratch.mit.edu/projects/1059644681 <br>
 
-<br> Be sure to install all dependencies in requirements.txt.<br>
-They are as follows:  
+<br> Be sure to install all dependencies in requirements.txt through pip<br>
+They are as follows:  (It is assumed you already have pip and python3)
 
-- scratchattach
-- Wikipedia-api
-- better_profanity
+- scratchattach [Here](https://github.com/TimMcCool/scratchattach/)
+- Wikipedia-api [Here](https://github.com/martin-majlis/Wikipedia-API)
+- better_profanity [Here](https://github.com/snguyenthanh/better_profanity)
 
+> Example: `pip install scratchattach` (Command Prompt or Bash)
 # Instructions for use
 
 Once cloned, run the "main.py" script once and close the program using the included tkinter gui by clicking the button "Kill Program."
