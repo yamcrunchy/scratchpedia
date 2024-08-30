@@ -26,7 +26,7 @@ They are as follows: (It is assumed you already have pip and python3)
 
 # Instructions for use
 
-Once cloned, run the "main.py" script once and close the program using the included tkinter gui by clicking the button "Kill Program."
+Once cloned, run the "main.py" script once and close the program using the included tkinter gui by clicking the button "Kill Program."<br>
 From there, create a .env file in the root of the directory. <br>Structure it like this:
 
 - username="your username here"
