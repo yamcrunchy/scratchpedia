@@ -9,10 +9,10 @@ import sys
 from better_profanity import profanity
 
 # Scratch connection
-username = os.environ["username"]
-password = os.environ["password"]
-project_id = os.environ["project_id"]
-session_id = os.environ["session_id"]
+username = os.getenv("username")
+password = os.getenv("password")
+project_id = os.getenv("project_id")
+session_id = os.getenv("session_id")
 session = scratch3.login(username, password)
 conn = scratch3.CloudConnection(
     project_id=project_id,
