@@ -9,6 +9,17 @@ import sys
 from better_profanity import profanity
 
 # Scratch connection
+username = os.environ["username"]
+password = os.environ["password"]
+project_id = os.environ["project_id"]
+session_id = os.environ["session_id"]
+session = scratch3.login(username, password)
+conn = scratch3.CloudConnection(
+    project_id=project_id,
+    username=username,
+    session_id=session_id
+)
+
 with open("logs/info.txt", "r") as file:  # Get sensitive information
     data = file.readlines()
     id = data[0].replace("\n", "")
