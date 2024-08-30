@@ -93,6 +93,8 @@ def main():
         f.close()
         f = open("logs/wiki.txt", "w+")
         f.close()
+    words = ["genital", "genitals", "herpes", "sex", "sexual", "syphilis", "gonorrhoea", "chlamydia", "trichomoniasis", "hepatitis", "HIV", "papillomavirus", "HPV", "GTA", "circumcision", "slurs", "slur", "racist"]
+    profanity.add_censor_words(words)
     if scratch3.get_var(id, "operation") is not None:
         print("Successfully initialized.\nStarting event listener...")
         events.start(thread=True)
@@ -189,7 +191,9 @@ def user_in_users(username):
 
 def handle_operation(event):
     global change, status, wiki_index, wiki_response, wiki_chunkcount, wiki_request
+
     if event.var == "operation":
+        
         d_operation = decode_list(scratch3.get_var(id, "operation"))  
         operation_vars = { # Decoded cloud variable operation packet
             "change": d_operation[0],
@@ -200,16 +204,17 @@ def handle_operation(event):
             "request": d_operation[5],
             "chunk-number": d_operation[6]
         }
+        if not user_in_users(operation_vars["username"]): # Check if user has used project prior
+            log(operation_vars["username"] + "\n", "users") # Add username to logs/users.txt
+            with open("logs/users.txt", "r") as file:
+                user_num = len(file.readlines())
+            print(f"User {operation_vars["username"]} logged to log/users.txt (# {user_num})") 
+            msg = f"{operation_vars['username']} has been added as the {user_num}th user to users text file."
+        else: # User has used before
+            msg = "Welcome back " + operation_vars["username"]
+
         if operation_vars["type"] == "update" and operation_vars["change"] != change: # Respond to ping
             status = "Responding to ping request"
-            if not user_in_users(operation_vars["username"]): # Check if user has used project prior
-                log(operation_vars["username"] + "\n", "users") # Add username to logs/users.txt
-                with open("logs/users.txt", "r") as file:
-                    user_num = len(file.readlines()) + 1
-                print(f"User {operation_vars["username"]} logged to log/users.txt (# {user_num})") 
-                msg = f"{operation_vars['username']} has been added as the {user_num}th user to users text file."
-            else: # User has used before
-                msg = "Welcome back " + operation_vars["username"]
 
             operation_response = { # Operation Response packet
                 "change": operation_vars["change"],
@@ -235,6 +240,7 @@ def handle_operation(event):
             log(f"{operation_vars['change']} Received Request @ {operation_vars['time']} from user {operation_vars['username']} \n", "updates")
             print(f"{operation_vars['change']} Received Request @ {operation_vars['time']} from user {operation_vars['username']}")
             change = operation_vars["change"]
+            profanity.load_censor_words()
             if profanity.contains_profanity(operation_vars['request']): # If request was profane log and restrict
                 status = "responding to denied wiki access"
                 msg = "Request denied: Profanity. User recorded!"
