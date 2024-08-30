@@ -190,7 +190,7 @@ def user_in_users(username):
 def handle_operation(event):
     global change, status, wiki_index, wiki_response, wiki_chunkcount, wiki_request
     if event.var == "operation":
-        d_operation = decode_list(operation)  
+        d_operation = decode_list(scratch3.get_var(id, "operation"))  
         operation_vars = { # Decoded cloud variable operation packet
             "change": d_operation[0],
             "username": d_operation[1],
@@ -204,8 +204,10 @@ def handle_operation(event):
             status = "Responding to ping request"
             if not user_in_users(operation_vars["username"]): # Check if user has used project prior
                 log(operation_vars["username"] + "\n", "users") # Add username to logs/users.txt
-                print("User " + operation_vars["username"] + " logged to log/users.txt") 
-                msg = f"User {operation_vars['username']} + was added to database!"
+                with open("logs/users.txt", "r") as file:
+                    user_num = len(file.readlines()) + 1
+                print(f"User {operation_vars["username"]} logged to log/users.txt (# {user_num})") 
+                msg = f"{operation_vars['username']} has been added as the {user_num}th user to users text file."
             else: # User has used before
                 msg = "Welcome back " + operation_vars["username"]
 
