@@ -1,34 +1,77 @@
-import scratchattach as scratch3
-from scratchattach import Encoding
 from datetime import datetime
-import wikipediaapi
 import os
 import re
+import subprocess
 import tkinter as tk
 import sys
+import time
+
+#install required packages
+def install_requirements():
+    requirements_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'requirements.txt')
+    if not os.path.exists(requirements_path):
+        print("requirements.txt not found. Proceeding without auto-install.")
+        return
+
+    try:
+        print("Installing/updating dependencies from requirements.txt...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_path])
+        print("All requirements installed successfully.")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install requirements: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"An unexpected error occurred during installation: {e}")
+        sys.exit(1)
+
+install_requirements()
+
 from better_profanity import profanity
+import wikipediaapi
+import scratchattach as scratch3
+from scratchattach import Encoding
+from dotenv import load_dotenv, dotenv_values
+
+#load env
+load_dotenv()
+config = dotenv_values(".env")
 
 # Scratch connection
-username = os.getenv("username")
-password = os.getenv("password")
-project_id = os.getenv("project_id")
-session_id = os.getenv("session_id")
-session = scratch3.login(username, password)
-conn = scratch3.CloudConnection(
-    project_id=project_id,
-    username=username,
-    session_id=session_id
-)
+username = config.get("username")
+password = config.get("password")
+project_id = config.get("project_id")
+session_id = config.get("session_id")
+
+#session = scratch3.login(username, password)
+def connect_scratch(project_id, username, session_id, max_retries=3, delay=5):
+    for attempt in range(max_retries):
+        try:
+            conn = scratch3.CloudConnection(
+                project_id=project_id,
+                username=username,
+                session_id=session_id
+            )
+            print(f"Connected successfully to project {project_id}")
+            return conn
+        except scratch3.exceptions.ConnectionError:
+            print(f"Attempt {attempt+1} failed: Cannot connect to Scratch Cloud. Retrying in {delay}s...")
+            time.sleep(delay)
+    print("Failed to connect after multiple attempts. Scratch Cloud may be down.")
+    return None
+
+conn = connect_scratch(project_id, username, session_id)
 
 with open("logs/info.txt", "r") as file:  # Get sensitive information
     data = file.readlines()
     id = data[0].replace("\n", "")
     session = scratch3.login(data[1].replace("\n", ""), data[2].replace("\n", ""))
-    conn = scratch3.CloudConnection(
+    conn = connect_scratch(
         project_id=id,
         username=data[1].replace("\n", ""),
         session_id=data[3].replace("\n", ""),
     )
+
 events = scratch3.CloudEvents(id)
 stored_operation = {"last_online": "", "response": ""}
 operation = ""
@@ -44,6 +87,7 @@ wiki_index = 0
 wiki_response = ""
 wiki_chunkcount = 0
 wiki_request = ""
+
 # Tkinter
 class Window: # GUI (Window, label, kill and pause button)
     def __init__(self):

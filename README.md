@@ -15,7 +15,7 @@ git clone https://github.com/yamcrunchy/scratchpedia.git
 
 Then proceed to remix this scratch project: https://scratch.mit.edu/projects/1059644681
 
-<br> Be sure to install all dependencies in requirements.txt through pip<br>
+<br> Be sure to install all dependencies in requirements.txt through pip it should automatically install though<br>
 They are as follows: (It is assumed you already have pip and python3)
 
 - scratchattach [Here](https://github.com/TimMcCool/scratchattach/)
